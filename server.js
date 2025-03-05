@@ -1,12 +1,16 @@
 const express = require('express');
 const sqlite3 = require('sqlite3').verbose();
 const path = require('path');
+const restaurantRoutes = require('./routes/restaurantRoutes');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+
+// Use restaurant routes
+app.use('/api/restaurants', restaurantRoutes);
 
 // ----------------------
 // SQLite Database Setup
