@@ -5,6 +5,7 @@ const app = require('../server'); // Adjust the path if needed
 
 describe('DineWise Backend API', function() {
     let testRestaurantId;
+    let testRestaurantId2;
     let reservationId;
     let queueId;
     let reservationNum;
@@ -55,6 +56,25 @@ describe('DineWise Backend API', function() {
                 if (err) return done(err);
                 expect(res.body).to.have.property('reservation_id');
                 reservationId = res.body.reservation_id;
+                done();
+            });
+    });
+
+    // Test POST /api/customers/login
+    it('POST /api/customers/login should get the correct information', function(done) {
+        request(app)
+            .post('/api/customers/login')
+            .send({
+                name: "Test Customer",
+                phone: "1234567890"
+            })
+            .expect(200)
+            .end((err, res) => {
+                if (err) return done(err);
+                expect(res.body).to.have.property('reservations');
+                expect(res.body.reservations).to.be.an('array');
+                expect(res.body.reservations[0]).to.be.an('object');
+                expect(res.body.reservations[0].id).to.equal(reservationId);
                 done();
             });
     });
@@ -172,6 +192,93 @@ describe('DineWise Backend API', function() {
             .end((err, res) => {
                 if (err) return done(err);
                 expect(res.body.queue.length).to.equal(queueNum);
+                done();
+            });
+    });
+
+    // Test POST /api/restaurants/signup
+    it('POST /api/restaurants/signup should add a new restaurant to the database', function(done) {
+        request(app)
+            .post('/api/restaurants/signup')
+            .send({
+                name: "test restaurant",
+                userid: "test_restaurant",
+                password: "123456"
+            })
+            .expect(201)
+            .end((err, res) => {
+                if (err) return done(err);
+                expect(res.body).to.have.property('restaurantId');
+                expect(res.body.message).to.equal("Restaurant signed up successfully.");
+                testRestaurantId2 = res.body.restaurantId;
+                done();
+            });
+    });
+
+    // Test POST /api/restaurants/login
+    it('POST /api/restaurants/login should successfully login the restaurant', function(done) {
+        request(app)
+            .post('/api/restaurants/login')
+            .send({
+                userid: "test_restaurant",
+                password: "123456"
+            })
+            .expect(200)
+            .end((err, res) => {
+                if (err) return done(err);
+                expect(res.body).to.have.property('restaurantId');
+                expect(res.body.message).to.equal("Login successful");
+                expect(res.body.restaurantId).to.equal(testRestaurantId2);
+                done();
+            });
+    });
+
+    // Test PUT /api/opening_hours/:restaurant_id
+    it('PUT /api/opening_hours/:restaurant_id should update the opening hours for a restaurant', function(done) {
+        request(app)
+            .put(`/api/opening_hours/${testRestaurantId2}`)
+            .send({
+                opening_hours: [
+                    {day_of_week: 0, open_time: '17:00', close_time: '22:00'},
+                    {day_of_week: 1, open_time: '17:00', close_time: '22:00'},
+                    {day_of_week: 2, open_time: '17:00', close_time: '22:00'},
+                    {day_of_week: 3, open_time: '17:00', close_time: '22:00'},
+                    {day_of_week: 4, open_time: '17:00', close_time: '22:00'},
+                    {day_of_week: 5, open_time: '12:00', close_time: '24:00'},
+                    {day_of_week: 6, open_time: '12:00', close_time: '24:00'}
+                ],
+            })
+            .expect(200)
+            .end((err, res) => {
+                if (err) return done(err);
+                expect(res.body.message).to.equal('Opening hours updated successfully.');
+                done();
+            })
+    })
+
+    // Test GET /api/opening_hours/:restaurant_id
+    it('GET /api/opening_hours/:restaurant_id should give the correct operating hours of the restaurant', function(done) {
+        request(app)
+            .get(`/api/opening_hours/${testRestaurantId2}`)
+            .expect(200)
+            .end((err, res) => {
+                if (err) return done(err);
+                res.body.opening_hours.forEach((day) => {
+                    expect(day.open_time).to.equal((day.day_of_week === 5 || day.day_of_week === 6) ? '12:00' : '17:00');
+                    expect(day.close_time).to.equal((day.day_of_week === 5 || day.day_of_week === 6) ? '24:00' : '22:00');
+                })
+                done();
+            })
+    })
+
+    // Test Delete /api/restaurants/:id
+    it('DELETE /api/restaurants/:id should delete the restaurant', function(done) {
+        request(app)
+            .delete(`/api/restaurants/${testRestaurantId2}`)
+            .expect(200)
+            .end((err, res) => {
+                if (err) return done(err);
+                expect(res.body).to.have.property('success', true);
                 done();
             });
     });

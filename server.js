@@ -327,6 +327,21 @@ app.delete('/reservations/:id', (req, res) => {
   });
 });
 
+app.delete('/api/restaurants/:id', (req, res) => {
+  const { id } = req.params;
+  const sql = `DELETE FROM restaurants WHERE id = ?`;
+  const sql2 = `DELETE FROM opening_hours WHERE restaurant_id = ?`;
+  db.run(sql, [id], function (err) {
+    if (err) return res.status(500).json({ error: err.message });
+    if (this.changes === 0) return res.status(404).json({ error: "Restaurant not found." });
+  })
+  db.run(sql2, [id], function (err) {
+    if (err) return res.status(500).json({ error: err.message });
+    if (this.changes === 0) return res.status(404).json({ error: "Restaurant not found." });
+  })
+  res.json({ success: true });
+})
+
 app.use('/queue', (req, res, next) => {
   db.run("DELETE FROM queue WHERE date(join_time) < date('now','localtime')", (err) => {
     if (err) console.error("Error cleaning old queue entries:", err.message);
